@@ -196,3 +196,37 @@ $ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test
 ..................                                                       [100%]
 18 passed, 60 warnings in 0.98s
 ```
+
+## Additional Booking Payment Integrity Fix
+
+Booking 1 stores an authoritative amount of 8,000 cents. Even though the request attempts to supply one cent, the endpoint ignores the body value and charges the stored amount:
+
+```console
+$ curl -sS -X POST http://127.0.0.1:8000/bookings/1/confirm-payment -H "X-Member-Token: riverside-member-1" -H "Content-Type: application/json" -d '{"amount_cents":1}'
+{"status":"succeeded","attempt_id":3,"booking_status":"confirmed"}
+
+$ curl -sS http://127.0.0.1:8000/sessions/debug/payment-charge-log -H "X-Member-Token: riverside-admin"
+{"charges":[8000]}
+```
+
+A second confirmation is rejected without another provider charge:
+
+```console
+$ curl -sS -X POST http://127.0.0.1:8000/bookings/1/confirm-payment -H "X-Member-Token: riverside-member-1"
+{"detail":"booking already paid"}
+```
+
+The database records the trusted amount and stable operation key:
+
+```console
+$ docker compose exec -T db psql -U kindred -d kindred -Atc "select b.id,b.amount_cents,b.status,pa.amount_cents,pa.status,pa.idempotency_key from bookings b join payment_attempts pa on pa.booking_id=b.id where b.id=1;"
+1|8000|confirmed|8000|succeeded|booking-confirmation:1
+```
+
+## Payment Integrity Final Test Run
+
+```console
+$ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test' .venv/bin/python -m pytest -q
+...................                                                      [100%]
+19 passed, 61 warnings in 0.52s
+```

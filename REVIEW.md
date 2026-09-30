@@ -59,6 +59,8 @@ The endpoint charges `payload.amount_cents`, a caller-controlled value, instead 
 
 **Recommended fix:** Remove the amount from the public confirmation payload and always charge the amount stored on the authorized booking. Add server-side validation of the booking state and amount, reject confirmation of an already-paid booking, and protect the operation with a stable idempotency key.
 
+**Resolution:** Fixed during post-assignment hardening. The endpoint now charges `booking.amount_cents`, persists `booking-confirmation:{booking.id}` before the provider call, validates any resumed attempt against the booking amount, and rejects an already-confirmed booking with HTTP 409.
+
 ## 3 Introduction endpoint exposes another club's restricted medical data
 
 - **File and line:** `app/routers/introductions.py:19-25`
@@ -106,4 +108,3 @@ $ curl -sS --get http://127.0.0.1:8000/clubs/riverside/knowledge/query --data-ur
 `build_member_profile_text` concatenates every attribute into the text used to create matching embeddings, including rows explicitly marked `restricted`. Although the raw text is not returned by the candidates endpoint, health, clinical, or psychometric information can still affect rankings and is sent into the matching representation, violating the stated privacy boundary.
 
 **Recommended fix:** Centralize construction of matchable attributes in a query that requires the member's club and `MemberAttribute.restricted.is_(False)`, then use that safe query for every embedding refresh and on-demand profile build. Recompute existing profile embeddings from non-restricted data and add tests proving that adding or changing a restricted attribute cannot change the profile text or candidate score.
-

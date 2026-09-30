@@ -37,3 +37,7 @@ The `knowledge_question` branch in `advance_turn` calls `find_grounded_knowledge
 ## Closing Question
 
 Given the fixed time, I deliberately did not replace the synchronous extraction endpoint with a durable background queue or add database uniqueness constraints, because the assignment prohibits schema changes and prioritizes a working audited pipeline. With one more day, I would propose a migration for a unique extraction key and explicit processed-zero marker, add provider reconciliation and observability for extraction retries, and load-test concurrent extraction and payment-confirmation requests before production deployment.
+
+## Additional Payment Integrity Hardening
+
+After completing the required and bonus parts, I fixed the separate direct-booking underpayment issue identified in `REVIEW.md`. `confirm_payment` now ignores request-body amounts, charges the authoritative `booking.amount_cents`, persists the stable key `booking-confirmation:{booking.id}` before the provider call, verifies a resumed attempt has the same amount, and returns HTTP 409 without another provider call when the booking is already confirmed.
