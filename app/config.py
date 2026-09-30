@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     llm_max_attempts: int = 3
     llm_retry_base_seconds: float = 0.5
+    introduction_confidence_threshold: float = 0.75
 
 
 settings = Settings()

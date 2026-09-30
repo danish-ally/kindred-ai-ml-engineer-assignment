@@ -142,3 +142,27 @@ $ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test
 .............                                                            [100%]
 13 passed, 59 warnings in 0.70s
 ```
+
+## Part 4a Grounded Introduction Demonstration
+
+The request-level threshold excludes the seeded 0.3-confidence attribute, while the response exposes every included source for audit:
+
+```console
+$ curl -sS --get http://127.0.0.1:8000/introductions/3/4 --data-urlencode "reason=business" --data-urlencode "confidence_threshold=0.8" -H "X-Member-Token: riverside-member-1"
+{"reason_text":"Grounded business introduction — Riverside Member 1: raising a seed round, looking for angel investors; introductions to climate-tech seed investors | Riverside Member 2: angel investor, has backed a dozen seed-stage startups; happy to mentor others","source_attributes":[{"attribute_id":1,"member_id":3,"kind":"need","text":"raising a seed round, looking for angel investors","confidence":0.9},{"attribute_id":10,"member_id":3,"kind":"need","text":"introductions to climate-tech seed investors","confidence":0.9},{"attribute_id":3,"member_id":4,"kind":"offer","text":"angel investor, has backed a dozen seed-stage startups","confidence":0.95},{"attribute_id":11,"member_id":4,"kind":"offer","text":"happy to mentor others","confidence":0.9}],"confidence_threshold":0.8}
+```
+
+Member 5 has only restricted context and member 8 has no qualifying attributes, so the endpoint refuses to invent a reason:
+
+```console
+$ curl -sS --get http://127.0.0.1:8000/introductions/5/8 --data-urlencode "reason=business" -H "X-Member-Token: riverside-member-1"
+{"reason_text":"insufficient basis for an introduction","source_attributes":[],"confidence_threshold":0.75}
+```
+
+## Part 4a Test Run
+
+```console
+$ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test' .venv/bin/python -m pytest -q
+................                                                         [100%]
+16 passed, 60 warnings in 1.42s
+```

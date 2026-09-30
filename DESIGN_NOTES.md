@@ -25,3 +25,7 @@ The retry strategy in `extract_with_retry` retries only `TransientLLMError` fail
 ### Evaluation threshold
 
 The real-API evaluation assigns one point each for kind, restricted equality, and expected-keyword presence, for 12 possible points across the four golden records. The pass threshold is 0.80, requiring at least 10 of 12 checks and allowing at most two isolated model mistakes while still requiring broadly correct semantic and privacy behavior; the script prints every component and exits non-zero below that threshold.
+
+## Part 4a Grounded Introduction Reasons
+
+The introduction endpoint filters by the caller's club, `MemberAttribute.restricted.is_(False)`, and `MemberAttribute.confidence >= threshold` before constructing any output text, so excluded values never enter the renderer. The threshold defaults to the `INTRODUCTION_CONFIDENCE_THRESHOLD` environment setting and can be overridden by the validated `confidence_threshold` request parameter; the response returns the exact source attribute IDs and values for audit, or `insufficient basis for an introduction` when no rows qualify.
