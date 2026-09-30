@@ -28,30 +28,61 @@ def advance_turn(session: ConversationSession, intent: str, payload: dict, db: D
             "party_size": session.party_size,
         }
 
-    if intent == "affirm" and session.awaiting_confirmation:
-        amount_cents = payload.get("amount_cents", 0)
+    if intent == "affirm" and session.status == "confirmed":
+        return {"status": "confirmed", "booking_id": session.booking_id}
 
-        # No check here for a prior successful charge on this session, and
-        # nothing is persisted before the charge happens.
-        result = payment_mock_client.charge(amount_cents)
+    if intent == "affirm" and session.awaiting_confirmation:
+        idempotency_key = f"session-confirmation:{session.id}"
+        attempt = (
+            db.query(PaymentAttempt)
+            .filter(PaymentAttempt.idempotency_key == idempotency_key)
+            .first()
+        )
+
+        if attempt is None:
+            amount_cents = payload.get("amount_cents", 0)
+            booking = Booking(
+                member_id=session.member_id,
+                club_id=session.club_id,
+                description="Session-confirmed booking",
+                amount_cents=amount_cents,
+                status="pending",
+            )
+            db.add(booking)
+            db.flush()
+            attempt = PaymentAttempt(
+                booking_id=booking.id,
+                idempotency_key=idempotency_key,
+                amount_cents=amount_cents,
+                status="pending",
+            )
+            db.add(attempt)
+            db.commit()
+        else:
+            booking = db.get(Booking, attempt.booking_id)
+            amount_cents = attempt.amount_cents
+
+        if attempt.status == "succeeded":
+            session.booking_id = booking.id
+            session.status = "confirmed"
+            session.awaiting_confirmation = False
+            db.commit()
+            return {"status": "confirmed", "booking_id": booking.id}
+
+        result = payment_mock_client.charge(amount_cents, idempotency_key=idempotency_key)
 
         if payload.get("simulate_crash"):
             raise SimulatedCrash("process died after the charge, before the session/booking were saved")
 
-        booking = Booking(
-            member_id=session.member_id,
-            club_id=session.club_id,
-            description="Session-confirmed booking",
-            amount_cents=amount_cents,
-            status="confirmed" if result.status == "succeeded" else "pending",
-        )
+        attempt.status = result.status
+        booking.status = "confirmed" if result.status == "succeeded" else "pending"
+        db.add(attempt)
         db.add(booking)
-        db.flush()
-        db.add(PaymentAttempt(booking_id=booking.id, amount_cents=amount_cents, status=result.status))
         session.booking_id = booking.id
-        session.status = "confirmed"
-        session.awaiting_confirmation = False
+        if result.status == "succeeded":
+            session.status = "confirmed"
+            session.awaiting_confirmation = False
         db.commit()
-        return {"status": "confirmed", "booking_id": booking.id}
+        return {"status": session.status, "booking_id": booking.id}
 
     return {"status": session.status}

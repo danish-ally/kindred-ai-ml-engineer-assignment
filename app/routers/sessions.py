@@ -55,6 +55,7 @@ def turn(
     session = (
         db.query(ConversationSession)
         .filter(ConversationSession.id == session_id, ConversationSession.member_id == member.id)
+        .with_for_update()
         .first()
     )
     if not session:
