@@ -1,5 +1,57 @@
 # Terminal Log
 
+## Setup
+
+Port 5432 was already occupied by a local PostgreSQL server, so the README's documented alternate-port path was used with Docker PostgreSQL exposed on 5434 and the ignored local `.env` updated to match.
+
+```console
+$ docker compose up -d db
+Container attachai-ai-ml-eng-db-1 Started
+
+$ docker compose ps
+NAME                      IMAGE                    COMMAND                  SERVICE   STATUS                  PORTS
+attachai-ai-ml-eng-db-1   pgvector/pgvector:pg16   "docker-entrypoint.s…"   db        Up (healthy)            0.0.0.0:5434->5432/tcp
+
+$ python3 -m venv .venv
+$ .venv/bin/python -m pip install -r requirements.txt
+Successfully installed fastapi-0.115.0 httpx-0.27.2 pgvector-0.3.4 psycopg-3.2.10 pydantic-settings-2.5.2 pytest-8.3.3 sqlalchemy-2.0.52 uvicorn-0.30.6
+
+$ .venv/bin/python -m scripts.seed
+Seed complete.
+
+Tokens (use as the X-Member-Token header):
+  riverside admin: riverside-admin
+  oakhurst admin:  oakhurst-admin
+  Riverside Member 1: riverside-member-1
+  Riverside Member 2: riverside-member-2
+  Riverside Member 3: riverside-member-3
+  Riverside Member 4: riverside-member-4
+  Riverside Member 5: riverside-member-5
+  Riverside Member 6: riverside-member-6
+  Oakhurst Member 1: oakhurst-member-1
+  Oakhurst Member 2: oakhurst-member-2
+  Oakhurst Member 3: oakhurst-member-3
+  Oakhurst Member 4: oakhurst-member-4
+  Oakhurst Member 5: oakhurst-member-5
+  Oakhurst Member 6: oakhurst-member-6
+```
+
+## Initial Test Run
+
+```console
+$ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test' .venv/bin/python -m pytest
+============================= test session starts ==============================
+collected 7 items
+
+tests/test_bookings.py .                                                 [ 14%]
+tests/test_introductions.py .                                            [ 28%]
+tests/test_knowledge.py ..                                               [ 57%]
+tests/test_matching.py .                                                 [ 71%]
+tests/test_sessions.py ..                                                [100%]
+
+======================== 7 passed, 50 warnings in 0.29s ========================
+```
+
 ## Part 2 Before Fix
 
 The original flow charged 5,000 cents, crashed before persistence, and charged the same amount again on retry.
