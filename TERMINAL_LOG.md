@@ -166,3 +166,33 @@ $ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test
 ................                                                         [100%]
 16 passed, 60 warnings in 1.42s
 ```
+
+## Part 4b Grounded Knowledge Demonstration
+
+A matching Riverside knowledge source returns its stored body verbatim with retrieval evidence:
+
+```console
+$ curl -sS -X POST http://127.0.0.1:8000/sessions -H "X-Member-Token: riverside-member-1"
+{"session_id":3,"status":"active"}
+
+$ curl -sS -X POST http://127.0.0.1:8000/sessions/3/turn -H "X-Member-Token: riverside-member-1" -H "Content-Type: application/json" -d '{"intent":"knowledge_question","question":"What is the dress code?"}'
+{"status":"answered","answer":"Riverside's dress code is smart casual after 6pm, resort wear during the day.","source":{"chunk_id":2,"title":"Dress code","matched_terms":["code","dress"],"score":1.0}}
+```
+
+An unrelated question has no grounded source and escalates instead of generating an answer:
+
+```console
+$ curl -sS -X POST http://127.0.0.1:8000/sessions -H "X-Member-Token: riverside-member-1"
+{"session_id":4,"status":"active"}
+
+$ curl -sS -X POST http://127.0.0.1:8000/sessions/4/turn -H "X-Member-Token: riverside-member-1" -H "Content-Type: application/json" -d '{"intent":"knowledge_question","question":"Can I bring my dog?"}'
+{"status":"escalate"}
+```
+
+## Part 4b Final Test Run
+
+```console
+$ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test' .venv/bin/python -m pytest -q
+..................                                                       [100%]
+18 passed, 60 warnings in 0.98s
+```

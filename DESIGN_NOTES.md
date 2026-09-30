@@ -29,3 +29,11 @@ The real-API evaluation assigns one point each for kind, restricted equality, an
 ## Part 4a Grounded Introduction Reasons
 
 The introduction endpoint filters by the caller's club, `MemberAttribute.restricted.is_(False)`, and `MemberAttribute.confidence >= threshold` before constructing any output text, so excluded values never enter the renderer. The threshold defaults to the `INTRODUCTION_CONFIDENCE_THRESHOLD` environment setting and can be overridden by the validated `confidence_threshold` request parameter; the response returns the exact source attribute IDs and values for audit, or `insufficient basis for an introduction` when no rows qualify.
+
+## Part 4b Grounded Knowledge Answers
+
+The `knowledge_question` branch in `advance_turn` calls `find_grounded_knowledge` with `session.club_id`, and that service searches only the club's chunks and requires at least one meaningful lexical term in common with the question. A match returns the stored chunk body verbatim plus its chunk ID, title, matched terms, and score; no match sets the session state to `escalated` and returns `{"status": "escalate"}` instead of asking a model to guess.
+
+## Closing Question
+
+Given the fixed time, I deliberately did not replace the synchronous extraction endpoint with a durable background queue or add database uniqueness constraints, because the assignment prohibits schema changes and prioritizes a working audited pipeline. With one more day, I would propose a migration for a unique extraction key and explicit processed-zero marker, add provider reconciliation and observability for extraction retries, and load-test concurrent extraction and payment-confirmation requests before production deployment.

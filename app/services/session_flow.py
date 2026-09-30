@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session as DbSession
 
 from app.models import Booking, ConversationSession, PaymentAttempt
+from app.services.knowledge_service import find_grounded_knowledge
 from app.services.payment_mock import payment_mock_client
 
 
@@ -11,6 +12,23 @@ class SimulatedCrash(Exception):
 
 
 def advance_turn(session: ConversationSession, intent: str, payload: dict, db: DbSession) -> dict:
+    if intent == "knowledge_question":
+        match = find_grounded_knowledge(session.club_id, payload.get("question", ""), db)
+        if match is None:
+            session.status = "escalated"
+            db.commit()
+            return {"status": "escalate"}
+        return {
+            "status": "answered",
+            "answer": match.chunk.body,
+            "source": {
+                "chunk_id": match.chunk.id,
+                "title": match.chunk.title,
+                "matched_terms": match.matched_terms,
+                "score": round(match.score, 4),
+            },
+        }
+
     if intent == "refund_dispute":
         session.status = "escalated"
         db.commit()
