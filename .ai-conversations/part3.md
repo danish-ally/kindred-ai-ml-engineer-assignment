@@ -27,3 +27,7 @@ No existing row can represent a processed-zero result without inventing a fake a
 ## Real API verification outcome
 
 The first real evaluation invoked the OpenAI Responses API and exercised all three retry attempts, but the provider returned HTTP 429. A credential-only check succeeded, and a non-secret diagnostic request identified `credit_balance_exhausted`, so the implementation is authenticated but the supplied project currently has no API credits; the eval must be rerun after billing is enabled or a funded key is supplied.
+
+## Resolution
+
+The user supplied a funded replacement project key through the ignored local environment. The real evaluation then scored 12/12, and a live five-message extraction request succeeded; an identical second request returned `already_processed` for every message, confirming idempotency without additional LLM calls or rows.
