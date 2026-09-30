@@ -52,3 +52,32 @@ $ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test
 ........                                                                 [100%]
 8 passed, 51 warnings in 0.27s
 ```
+
+## Part 3 Test Run
+
+```console
+$ DATABASE_URL='postgresql+psycopg://kindred:kindred@localhost:5434/kindred_test' .venv/bin/python -m pytest -q
+............                                                             [100%]
+12 passed, 59 warnings in 0.42s
+```
+
+## Part 3 First Real Evaluation Attempt
+
+The evaluator made a real authenticated OpenAI Responses API call and exhausted its three-attempt retry strategy. The provider returned HTTP 429 because the supplied project had no remaining API credits, so the evaluator exited non-zero as designed.
+
+```console
+$ .venv/bin/python -m scripts.eval_extraction
+Traceback (most recent call last):
+  ...
+app.llm_client.TransientLLMError: OpenAI transient HTTP status 429
+
+$ # Credential-only diagnostic; the API key itself was not printed
+status= 200
+authentication=ok
+
+$ # Responses API error metadata; the API key itself was not printed
+status= 429
+type= insufficient_quota
+code= credit_balance_exhausted
+message= You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+```

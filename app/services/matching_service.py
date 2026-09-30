@@ -7,8 +7,15 @@ from app.models import Member, MemberAttribute
 
 
 def build_member_profile_text(member: Member, db: Session) -> str:
-    attrs = db.query(MemberAttribute).filter(MemberAttribute.member_id == member.id).all()
-    # NOTE: this joins every attribute regardless of its `restricted` flag.
+    attrs = (
+        db.query(MemberAttribute)
+        .filter(
+            MemberAttribute.member_id == member.id,
+            MemberAttribute.club_id == member.club_id,
+            MemberAttribute.restricted.is_(False),
+        )
+        .all()
+    )
     return " | ".join(a.text for a in attrs)
 
 
